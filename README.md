@@ -19,11 +19,13 @@ Modern web applications suffer from perceived latency bottlenecks when relying o
 * **Mode A (Baseline):** Conventional on-demand REST API data fetching on user click.
 * **Mode B (Optimized):** Algorithmic hover-intent predictive prefetching (triggering on a `>100ms` pointer dwell) combined with an in-memory **Stale-While-Revalidate (SWR)** caching layer.
 
-The project evaluates both strategies across **3 simulated network profiles** (Standard Broadband, Fast 4G, and Throttled 3G) over **30 runs per scenario (180 total experimental runs)** to quantify:
-1. **Client Navigation Latency (ms)**
-2. **Time to First Byte (TTFB)**
-3. **Total HTTP Request Volume**
-4. **Prefetch Cache Waste Rate (%)**
+The project evaluates both strategies in an **automated browser benchmark** of the running prototype: 2 modes × 3 latency conditions (fixed delays of 15, 85 and 380 ms added by the server) × 30 matched trials = **180 measured trials**. The four measures are:
+1. **Navigation time (ms)**
+2. **Total HTTP request count**
+3. **Cache-hit rate**
+4. **Wasted-prefetch rate**
+
+The optimisation layer includes in-flight request de-duplication (a click during a prefetch reuses the request already in flight), a cache limit of 100 entries with least-recently-used eviction, and defined keyboard and touch behaviour (keyboard focus uses the same delayed prefetch; touch falls back to on-demand fetching).
 
 ---
 
@@ -75,7 +77,7 @@ npm run dev
 
 ### Accessing the System:
 * **Frontend Web Application:** [http://localhost:3000](http://localhost:3000)
-* **Empirical Benchmark Cockpit:** [http://localhost:3000/benchmark-dashboard](http://localhost:3000/benchmark-dashboard)
+* **Benchmark Cockpit (earlier simulation):** [http://localhost:3000/benchmark-dashboard](http://localhost:3000/benchmark-dashboard)
 * **Backend REST API Health Check:** [http://localhost:5001/api/health](http://localhost:5001/api/health)
 * **Catalog API Endpoint:** [http://localhost:5001/api/products](http://localhost:5001/api/products)
 
@@ -89,37 +91,55 @@ docker compose up --build
 
 ---
 
-## 🧪 Automated Benchmarking & Statistical Analysis
-
-To reproduce the exact 180 controlled experimental runs specified in Thesis Objective 4:
+## ✅ Automated Tests
 
 ```bash
-# 1. Execute the 180-run automated benchmark suite across all 3 network profiles
-npm run benchmark
+# Unit tests of the production modules (cache, prefetcher, API client)
+npm test
 
-# 2. Run statistical evaluation (computes Mean, Std Dev, Welch's t-test, and renders charts)
-npm run analyze
+# Behaviour checks of the running application in a real browser
+# (mode switch, keyboard focus and touch, functional correctness on 30 products)
+npm run checks:browser
 ```
 
-> **Windows note:** if `npm run analyze` reports that `python3` is not found, run
-> `python analysis/analyze_results.py` instead.
-
-* **Raw CSV Results:** [`benchmark/raw-results/benchmark_results.csv`](benchmark/raw-results/benchmark_results.csv)
-* **Formatted Summary Table:** [`analysis/results_summary_table.md`](analysis/results_summary_table.md)
-* **Publication SVG Charts:** [`analysis/charts/latency_comparison.svg`](analysis/charts/latency_comparison.svg)
+The unit tests use Vitest and import `swrCache.js`, `hoverIntent.js` and `client.js` directly.
 
 ---
 
-## 📊 Summary of Empirical Results
+## 🧪 Measured Browser Benchmark (Objective 4)
 
-| Network Profile | Mode | Mean Latency (ms) | Std Dev (ms) | Mean TTFB (ms) | Total Requests | Latency Reduction (%) | Welch t-test |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Broadband** | Baseline | 40.85 | 6.32 | 22.84 | 30 | — | — |
-| **Broadband** | Optimized | 22.46 | 17.55 | 11.48 | 40 | **45.02%** | $p < 0.0001$ |
-| **Fast 4G** | Baseline | 111.96 | 16.53 | 93.59 | 30 | — | — |
-| **Fast 4G** | Optimized | 35.22 | 48.87 | 28.11 | 36 | **68.54%** | $p < 0.0001$ |
-| **Throttled 3G** | Baseline | 404.97 | 47.78 | 386.35 | 30 | — | — |
-| **Throttled 3G** | Optimized | 170.30 | 208.32 | 161.31 | 34 | **57.95%** | $p < 0.0001$ |
+The benchmark drives the running prototype in an installed browser (Microsoft Edge or Chrome) with Playwright.
+Stop `npm run dev` first, because the script starts the API and a production build of the frontend itself.
+
+```bash
+# 1. Run 2 modes x 3 fixed delays x 30 matched trials = 180 measured trials (about 10 minutes)
+npm run benchmark:browser
+
+# 2. Compute the paired statistics from the measured CSV
+npm run analyze:browser
+```
+
+* Every trial starts from a new page load with an empty application cache and reset counters.
+* Trial *i* uses the same product card and the same scripted pointer actions in both modes; the two modes run back to back in alternating order.
+* The scripted interaction sequence repeats every five trials: hover 150 ms then click; hover 300 ms then click; hover 600 ms then click; abandoned hover on another card then click; click without dwell.
+* Options: `--browser=chrome` or `--browser=msedge`, `--threshold=100` (for a threshold pilot), `--trials=30`.
+
+**Outputs**
+
+* Raw trials: `benchmark/raw-results/measured_benchmark_results.csv`
+* Run settings (browser, machine, Node.js version, interaction sequence): `benchmark/raw-results/measured_benchmark_results.meta.json`
+* Summary (descriptive statistics, paired differences with bootstrap 95% confidence intervals, Wilcoxon signed-rank test, rank-biserial effect size, Wilson intervals): `analysis/measured_results_summary.md`
+
+Measured times vary between machines and between runs.
+
+---
+
+## 🧮 Earlier Simulation (Exploratory Only)
+
+An earlier version of the project generated 180 rows from a probability-based model instead of measuring the application. It is kept as exploratory material and is **not** used as evidence:
+
+* `benchmark/run_synthetic_benchmark.js` and the Benchmark Cockpit page (`/benchmark-dashboard`) generate simulated rows.
+* `analysis/analyze_results.py` summarises them in [`analysis/results_summary_table.md`](analysis/results_summary_table.md) (`npm run benchmark:simulated`, `npm run analyze:simulated`).
 
 ---
 
@@ -142,32 +162,40 @@ npm run analyze
 │   │   │   ├── layout.js           # Root layout & Metadata
 │   │   │   ├── page.js             # Catalog view & interactive experiment hero
 │   │   │   ├── products/[id]/page.js # Route diagnostic & detailed specs
-│   │   │   ├── benchmark-dashboard/page.js # Dedicated evaluation cockpit
+│   │   │   ├── benchmark-dashboard/page.js # Cockpit for the earlier simulation (labelled as simulated)
+│   │   │   ├── api/[...path]/route.js # Built-in API routes for the Vercel deployment
 │   │   │   └── globals.css         # Modern design tokens, glassmorphism, animations
 │   │   ├── components/
 │   │   │   ├── Navbar.js           # Header with real-time Mode Switcher
 │   │   │   ├── ProductCard.js      # Dwell-intent detection with visual glow
 │   │   │   └── MetricsHUD.js       # Live floating performance HUD
 │   │   ├── lib/
-│   │   │   ├── cache/swrCache.js   # In-memory SWR cache & waste tracker
+│   │   │   ├── cache/swrCache.js   # In-memory SWR cache (100 entries, LRU) & waste tracker
 │   │   │   ├── prefetch/hoverIntent.js # >100ms dwell intent prefetch engine
 │   │   │   ├── metrics/performanceTracker.js # Central telemetry engine & CSV exporter
-│   │   │   └── api/client.js       # Unified dual-mode API fetcher
+│   │   │   └── api/client.js       # Unified dual-mode API fetcher with in-flight de-duplication
+│   ├── tests/                      # Unit tests (Vitest) of the cache, prefetcher and client
 │   ├── package.json
 │   └── Dockerfile
 ├── benchmark/
-│   ├── run_synthetic_benchmark.js  # 180-run controlled benchmark script
+│   ├── run_browser_benchmark.js    # Measured benchmark: 180 trials in a real browser (Playwright)
+│   ├── run_browser_checks.js       # Automated behaviour checks in the browser
+│   ├── lib/harness.js              # Shared helpers (servers, browser, trial set-up)
+│   ├── run_synthetic_benchmark.js  # Earlier simulation (exploratory only)
 │   └── raw-results/
-│       └── benchmark_results.csv   # Raw experimental measurements
+│       ├── measured_benchmark_results.csv  # Measured trials (written by the browser benchmark)
+│       └── benchmark_results.csv   # Simulated rows (exploratory only)
 ├── analysis/
-│   ├── analyze_results.py          # Python statistical evaluator & chart builder
-│   ├── results_summary_table.md    # Ready-to-use chapter results table
+│   ├── analyze_measured.py         # Paired analysis of the measured trials
+│   ├── measured_results_summary.md # Summary of the measured trials (written by analyze_measured.py)
+│   ├── analyze_results.py          # Summary of the simulated rows
+│   ├── results_summary_table.md    # Simulated summary (exploratory only)
 │   └── charts/
 │       └── latency_comparison.svg  # Comparative latency chart
 ├── docs/
-│   ├── SYSTEM_ARCHITECTURE.md      # Full architecture specifications
-│   ├── METHODOLOGY.md              # Research paradigm, variables, equations
-│   └── THESIS_CHAPTERS_GUIDE.md    # Complete chapter-by-chapter dissertation guide
+│   ├── SYSTEM_ARCHITECTURE.md      # Architecture specifications
+│   └── METHODOLOGY.md              # Experimental design, measures and analysis
+├── scripts/run-python.js           # Finds Python 3 on any operating system
 ├── start.sh                        # Mac / Linux one-click runner
 ├── start.bat                       # Windows one-click runner
 ├── docker-compose.yml              # Container orchestration
@@ -180,17 +208,17 @@ npm run analyze
 
 1. **Start the Application:** Run `./start.sh` (or `npm run dev`).
 2. **Observe Baseline Mode:**
-   * In the top navbar, click **Mode A: Baseline**.
+   * In the floating panel on the right, click **BASELINE**.
    * Hover over product cards — notice no prefetch occurs.
-   * Click any product card — observe in the floating HUD that latency matches the full simulated network round-trip (e.g. 100ms+ on 4G).
+   * Click any product card — the HUD shows that the navigation waits for the full round trip, including the added delay.
 3. **Observe Optimized Mode:**
-   * Switch the navbar toggle to **Mode B: Optimized (SWR)**.
-   * Hover over any product card for **>100ms** — notice the card pulses cyan indicating intent-based prefetching into SWR cache.
-   * Click the card — navigation renders in **sub-5ms**, accompanied by a green diagnostic badge.
+   * In the floating panel, click **SWR_PREFETCH**.
+   * Rest the pointer on any product card for more than **100 ms** — the product data are prefetched into the SWR cache in the background.
+   * Click the card — if the prefetch has completed, the navigation is served from the cache and a green badge is shown.
 4. **Demonstrate Waste Rejection:**
    * Rapidly swipe your cursor across multiple cards (<100ms) — the debounce timer cancels immediately, preventing speculative bandwidth waste!
 5. **Inspect Live Benchmark Telemetry:**
-   * Visit `/benchmark-dashboard` to view cumulative averages, hit ratios, and click **Export Raw CSV Data** to download the dataset for verification.
+   * The floating HUD shows the navigation time, cache hits, request count and wasted prefetches of the current session. The `/benchmark-dashboard` page shows the earlier simulation and is labelled as simulated.
 
 ---
 
@@ -204,4 +232,4 @@ the Express backend (`/api/products`, `/api/products/:id`, `/api/categories`, `/
 dataset and benchmark results into the frontend.
 
 When running locally with `npm run dev`, the frontend uses the Express backend on port 5001, as described
-above. Saving new benchmark results to the CSV file is only available locally.
+above. The measured benchmark is run locally against the Express backend.

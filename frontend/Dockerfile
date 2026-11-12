@@ -6,6 +6,9 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
+# The API address is compiled into the client bundle, so it must be set at build time
+ARG NEXT_PUBLIC_API_URL=http://localhost:5001/api
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 
 FROM node:18-alpine AS runner

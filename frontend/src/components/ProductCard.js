@@ -3,9 +3,8 @@
 import React, { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import globalPrefetcher from '../lib/prefetch/hoverIntent';
-import globalSWRCache from '../lib/cache/swrCache';
 import globalTracker from '../lib/metrics/performanceTracker';
-import { getProductById } from '../lib/api/client';
+import { prefetchProductById, cacheKeyFor } from '../lib/api/client';
 import { Star, ShoppingBag, ArrowRight, ShieldCheck } from 'lucide-react';
 import { formatPriceDKK } from '../lib/formatCurrency';
 
@@ -14,7 +13,7 @@ export default function ProductCard({ product, onAddToCart }) {
   const cardRef = useRef(null);
   const [cardTilt, setCardTilt] = useState({ rotateX: 0, rotateY: 0 });
 
-  const cacheKey = `API:/products/${product.id}`;
+  const cacheKey = cacheKeyFor(`/products/${product.id}`);
 
   // Tactile 3D Tilt on Mouse Move
   const handleMouseMove = (e) => {
@@ -28,22 +27,27 @@ export default function ProductCard({ product, onAddToCart }) {
     });
   };
 
-  // Pointer Enter - Prefetches silently in the background after 100ms dwell (no visual badges)
-  const handlePointerEnter = () => {
-    if (globalSWRCache.has(cacheKey)) return;
-
-    globalPrefetcher.onPointerEnter(
-      cacheKey,
-      async () => {
-        const res = await getProductById(product.id);
-        return res.data;
-      }
-    );
+  const startPrefetchTimer = () => {
+    globalPrefetcher.onPointerEnter(cacheKey, () => prefetchProductById(product.id));
   };
 
-  // Pointer Leave - Cancels prefetch if moved away before 100ms
+  // Pointer enter: prefetch in the background after the dwell threshold.
+  // Touch has no hover, so a tap falls back to on-demand fetching.
+  const handlePointerEnter = (e) => {
+    if (e && e.pointerType === 'touch') return;
+    startPrefetchTimer();
+  };
+
+  // Pointer leave: cancels the timer if the pointer left before the threshold
   const handlePointerLeave = () => {
     setCardTilt({ rotateX: 0, rotateY: 0 });
+    globalPrefetcher.onPointerLeave(cacheKey);
+  };
+
+  // Keyboard: focusing the card's controls uses the same delayed prefetch
+  const handleFocus = () => startPrefetchTimer();
+  const handleBlur = (e) => {
+    if (cardRef.current && e.relatedTarget && cardRef.current.contains(e.relatedTarget)) return;
     globalPrefetcher.onPointerLeave(cacheKey);
   };
 
@@ -60,6 +64,8 @@ export default function ProductCard({ product, onAddToCart }) {
       onMouseMove={handleMouseMove}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
       style={{
         transform: `perspective(800px) rotateX(${cardTilt.rotateX}deg) rotateY(${cardTilt.rotateY}deg)`
       }}

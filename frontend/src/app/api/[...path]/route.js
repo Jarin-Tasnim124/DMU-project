@@ -19,10 +19,12 @@ function json(body, status = 200, headers = {}) {
   });
 }
 
+const PERMITTED_DELAYS_MS = [15, 85, 380];
+
 async function applySimulatedDelay(request) {
   const url = new URL(request.url);
-  const ms = parseInt(url.searchParams.get('delay') || request.headers.get('x-simulated-delay'), 10);
-  if (!isNaN(ms) && ms > 0) {
+  const ms = parseInt(request.headers.get('x-simulated-delay') || url.searchParams.get('delay'), 10);
+  if (PERMITTED_DELAYS_MS.includes(ms)) {
     await new Promise(resolve => setTimeout(resolve, ms));
   }
 }

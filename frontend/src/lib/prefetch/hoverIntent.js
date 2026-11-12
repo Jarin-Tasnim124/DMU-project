@@ -1,28 +1,43 @@
-// Hover-Intent Predictive Prefetching Engine
-// Objective 3: Triggering on >100ms pointer dwell to anticipate user navigation
+// Hover-Intent Predictive Prefetching Engine (Objective 3)
+//
+// When the pointer (or keyboard focus) rests on a product card for at least the
+// dwell threshold (default 100 ms), the product data are prefetched in the
+// background. Leaving the card before the threshold cancels the timer, so no
+// request is sent. A prefetch that has already been sent is not cancelled; its
+// result stays in the cache and is counted as wasted if never used.
+//
+// Keys that are already cached or already being fetched are skipped.
+// Touch input has no hover, so touch navigation falls back to on-demand fetching
+// (the ProductCard component does not call the prefetcher for touch pointers).
 
 import globalSWRCache from '../cache/swrCache';
 
-class HoverIntentPrefetcher {
-  constructor(options = {}) {
-    this.dwellThreshold = options.dwellThreshold || 100; // ms
+export const DEFAULT_DWELL_MS = 100;
+
+export class HoverIntentPrefetcher {
+  constructor({ dwellThreshold = DEFAULT_DWELL_MS, cache = globalSWRCache } = {}) {
+    this.dwellThreshold = dwellThreshold;
+    this.cache = cache;
     this.inFlightRequests = new Set();
-    this.activeTimers = new Map(); // elementId -> timer
-    this.prefetchHistory = []; // records all prefetch triggers
+    this.activeTimers = new Map(); // key -> timer
+    this.prefetchHistory = [];
     this.listeners = new Set();
-    this.enabled = true; // Controlled by app mode (BASELINE disables this, OPTIMIZED enables)
+    this.enabled = true; // BASELINE disables, OPTIMIZED enables
+    this.isInFlightElsewhere = () => false; // set by the API client
+  }
+
+  setInFlightChecker(fn) {
+    this.isInFlightElsewhere = typeof fn === 'function' ? fn : () => false;
   }
 
   setEnabled(val) {
     this.enabled = Boolean(val);
-    if (!this.enabled) {
-      this.cancelAll();
-    }
+    if (!this.enabled) this.cancelAll();
     this.notify();
   }
 
   setDwellThreshold(ms) {
-    this.dwellThreshold = Math.max(20, Math.min(1000, Number(ms) || 100));
+    this.dwellThreshold = Math.max(20, Math.min(1000, Number(ms) || DEFAULT_DWELL_MS));
     this.notify();
   }
 
@@ -45,56 +60,36 @@ class HoverIntentPrefetcher {
   }
 
   /**
-   * Pointer enter handler. Starts dwell timer.
-   * If pointer stays >= dwellThreshold, executes fetcher function.
+   * Starts the dwell timer for a key. After `dwellThreshold` ms, `fetcher()` is
+   * called; it is responsible for fetching and caching (see client.js).
    */
   onPointerEnter(key, fetcher, onTriggerVisual = null) {
     if (!this.enabled) return;
+    if (this.cache.has(key)) return;
+    if (this.inFlightRequests.has(key) || this.isInFlightElsewhere(key)) return;
 
-    // If already cached and fresh, no need to trigger network prefetch
-    if (globalSWRCache.has(key)) {
-      return;
-    }
-
-    // If already in flight, don't duplicate
-    if (this.inFlightRequests.has(key)) {
-      return;
-    }
-
-    // Clear any lingering timer for this key
     if (this.activeTimers.has(key)) {
       clearTimeout(this.activeTimers.get(key));
     }
 
-    const startTime = performance.now();
+    const startTime = Date.now();
 
     const timer = setTimeout(async () => {
       this.activeTimers.delete(key);
-      const dwellDuration = performance.now() - startTime;
 
-      // Trigger prefetch execution
-      this.inFlightRequests.add(key);
-      if (typeof onTriggerVisual === 'function') {
-        onTriggerVisual(true);
+      // The key may have been fetched by a click while the timer was running
+      if (!this.enabled || this.cache.has(key) || this.isInFlightElsewhere(key)) {
+        this.notify();
+        return;
       }
 
-      this.prefetchHistory.push({
-        key,
-        dwellDuration,
-        timestamp: Date.now()
-      });
+      this.inFlightRequests.add(key);
+      if (typeof onTriggerVisual === 'function') onTriggerVisual(true);
+      this.prefetchHistory.push({ key, dwellDuration: Date.now() - startTime, timestamp: Date.now() });
       this.notify();
 
       try {
-        const fetchStart = performance.now();
-        const data = await fetcher();
-        const fetchDuration = performance.now() - fetchStart;
-
-        // Store into SWR cache marked as prefetched
-        globalSWRCache.set(key, data, {
-          prefetched: true,
-          fetchDuration
-        });
+        await fetcher();
       } catch (err) {
         console.warn(`[Prefetcher] Failed to prefetch key: ${key}`, err);
       } finally {
@@ -107,16 +102,12 @@ class HoverIntentPrefetcher {
     this.notify();
   }
 
-  /**
-   * Pointer leave handler. Cancels prefetch if pointer left before dwellThreshold!
-   */
+  /** Cancels the dwell timer if the pointer leaves before the threshold. */
   onPointerLeave(key, onCancelVisual = null) {
     if (this.activeTimers.has(key)) {
       clearTimeout(this.activeTimers.get(key));
       this.activeTimers.delete(key);
-      if (typeof onCancelVisual === 'function') {
-        onCancelVisual(false);
-      }
+      if (typeof onCancelVisual === 'function') onCancelVisual(false);
       this.notify();
     }
   }
@@ -125,6 +116,12 @@ class HoverIntentPrefetcher {
     this.activeTimers.forEach(timer => clearTimeout(timer));
     this.activeTimers.clear();
     this.inFlightRequests.clear();
+    this.notify();
+  }
+
+  reset() {
+    this.cancelAll();
+    this.prefetchHistory = [];
     this.notify();
   }
 

@@ -11,7 +11,55 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
-// OBJECTIVE 4 (O4) CONFIGURATION & EMPIRICAL METHODOLOGY CONSTANTS
+// Welch's t-test computed from the data (two-sided p from Student's t distribution)
+function logGamma(x) {
+  const c = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.001208650973866179, -0.000005395239384953];
+  let y = x, tmp = x + 5.5;
+  tmp -= (x + 0.5) * Math.log(tmp);
+  let ser = 1.000000000190015;
+  for (let j = 0; j < 6; j++) ser += c[j] / ++y;
+  return -tmp + Math.log(2.5066282746310005 * ser / x);
+}
+function betaCF(a, b, x) {
+  const tiny = 1e-300;
+  const qab = a + b, qap = a + 1, qam = a - 1;
+  let c = 1, d = 1 - qab * x / qap;
+  d = 1 / (Math.abs(d) > tiny ? d : tiny);
+  let h = d;
+  for (let m = 1; m <= 300; m++) {
+    const m2 = 2 * m;
+    let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+    d = 1 + aa * d; d = 1 / (Math.abs(d) > tiny ? d : tiny);
+    c = 1 + aa / c; c = Math.abs(c) > tiny ? c : tiny;
+    h *= d * c;
+    aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+    d = 1 + aa * d; d = 1 / (Math.abs(d) > tiny ? d : tiny);
+    c = 1 + aa / c; c = Math.abs(c) > tiny ? c : tiny;
+    const delta = d * c;
+    h *= delta;
+    if (Math.abs(delta - 1) < 1e-12) break;
+  }
+  return h;
+}
+function betaInc(a, b, x) {
+  if (x <= 0) return 0;
+  if (x >= 1) return 1;
+  const front = Math.exp(logGamma(a + b) - logGamma(a) - logGamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+  return x < (a + 1) / (a + b + 2) ? front * betaCF(a, b, x) / a : 1 - front * betaCF(b, a, 1 - x) / b;
+}
+function welchTTest(s1, s2) {
+  const n1 = s1.length, n2 = s2.length;
+  const m1 = s1.reduce((a, b) => a + b, 0) / n1, m2 = s2.reduce((a, b) => a + b, 0) / n2;
+  const v1 = s1.reduce((a, b) => a + (b - m1) ** 2, 0) / (n1 - 1 || 1);
+  const v2 = s2.reduce((a, b) => a + (b - m2) ** 2, 0) / (n2 - 1 || 1);
+  const se = Math.sqrt(v1 / n1 + v2 / n2);
+  if (!se) return { t: 0, df: 0, p: 1 };
+  const t = Math.abs(m1 - m2) / se;
+  const df = (v1 / n1 + v2 / n2) ** 2 / ((v1 / n1) ** 2 / (n1 - 1 || 1) + (v2 / n2) ** 2 / (n2 - 1 || 1));
+  return { t, df, p: betaInc(df / 2, 0.5, df / (df + t * t)) };
+}
+
+// SIMULATION CONFIGURATION (exploratory model) & EMPIRICAL METHODOLOGY CONSTANTS
 // 3 Network Profiles x 2 Architecture Modes x 30 Controlled Runs = 180 Runs
 // ============================================================================
 const SCENARIOS = [
@@ -23,9 +71,6 @@ const SCENARIOS = [
     label: 'Standard Broadband (WiFi / Fiber)', 
     pingLabel: '15ms Ping',
     badgeColor: '#059669',
-    baselineRef: 40.85,
-    optRef: 22.46,
-    speedupRef: '45.02%'
   },
   { 
     name: 'Fast 4G', 
@@ -35,9 +80,6 @@ const SCENARIOS = [
     label: 'Fast 4G Mobile LTE', 
     pingLabel: '85ms Ping',
     badgeColor: '#D97706',
-    baselineRef: 111.96,
-    optRef: 35.22,
-    speedupRef: '68.54%'
   },
   { 
     name: 'Throttled 3G', 
@@ -47,9 +89,6 @@ const SCENARIOS = [
     label: 'Throttled 3G / High Latency Cellular', 
     pingLabel: '380ms Ping',
     badgeColor: '#DC2626',
-    baselineRef: 404.97,
-    optRef: 170.30,
-    speedupRef: '57.95%'
   }
 ];
 
@@ -207,7 +246,7 @@ export default function BenchmarkCockpit() {
     return () => unsub();
   }, []);
 
-  // Compute Empirical Summary Statistics (Mean, Std, Median, P95, TTFB, Reduction %, Welch t-test)
+  // Compute summary statistics of the simulated rows (Mean, Std, Median, P95, TTFB, Reduction %, Welch t-test)
   const summaryStats = useMemo(() => {
     if (benchmark180Data.length === 0) return [];
 
@@ -258,7 +297,8 @@ export default function BenchmarkCockpit() {
         let ttest = null;
         if (g.mode === 'OPTIMIZED' && baseMean > 0) {
           reductionPct = ((baseMean - meanLat) / baseMean) * 100;
-          ttest = 't=6.84, p<0.0001';
+          const w = welchTTest(baseGroup.latencies, g.latencies);
+          ttest = `t=${w.t.toFixed(2)}, df=${w.df.toFixed(1)}, ${w.p < 0.001 ? 'p<0.001' : 'p=' + w.p.toFixed(3)}`;
         }
 
         rows.push({
@@ -624,7 +664,7 @@ export default function BenchmarkCockpit() {
             marginBottom: '0.75rem', 
             color: '#0A0A0A' 
           }}>
-            The Speed Test Cockpit: Controlled Empirical Evaluation
+            The Speed Test Cockpit: Exploratory Simulation
           </h1>
 
           <div style={{
@@ -638,11 +678,11 @@ export default function BenchmarkCockpit() {
             marginBottom: '1.25rem',
             letterSpacing: '0.02em'
           }}>
-            🎯 <span style={{ color: 'var(--accent-yellow)' }}>Objective 4 (O4):</span> Controlled 180-Run Benchmark (3 Network Profiles × 2 Modes × 30 Runs) & Raw CSV Export
+            ⚠️ <span style={{ color: 'var(--accent-yellow)' }}>Simulated data:</span> 180 modelled rows (3 Network Profiles × 2 Modes × 30 Runs). Not measured from the running application.
           </div>
 
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.02rem', lineHeight: 1.6, maxWidth: '980px', marginBottom: '2rem' }}>
-            This cockpit executes the rigorous empirical testing protocol defined in Chapter 5. By measuring client navigation latency and TTFB across 3 distinct network conditions (Standard Broadband 15ms, Fast 4G 85ms, Throttled 3G 380ms) and comparing Baseline on-demand fetching against Predictive Hover-Intent Prefetching + SWR memory caching, it generates reproducible telemetry for statistical verification.
+            The rows on this page are <strong>simulated</strong>: they are generated by a seeded model from assumed probabilities and timing distributions, and are kept as exploratory material only. The measured evaluation for Objective 4 is the automated browser benchmark (<code>npm run benchmark:browser</code>), which drives the running prototype under fixed added delays of 15, 85 and 380 ms and writes <code>benchmark/raw-results/measured_benchmark_results.csv</code>.
           </p>
 
           {/* 2 Comparative Architecture Cards (Mode A vs Mode B) */}
@@ -669,7 +709,7 @@ export default function BenchmarkCockpit() {
                 The browser waits until the user actively clicks a shoe card before dispatching an HTTP request over the wire.
               </p>
               <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem', color: '#4B5563', fontWeight: 600 }}>
-                🐢 <strong style={{ color: '#B91C1C' }}>Empirical Mean:</strong> User waits <strong>40.8ms to 405.0ms</strong> depending on network RTT.
+                🐢 <strong style={{ color: '#B91C1C' }}>Behaviour:</strong> Every navigation waits for the full round trip, including the added delay.
               </div>
             </div>
 
@@ -694,7 +734,7 @@ export default function BenchmarkCockpit() {
                 When mouse hover dwell exceeds <strong>τ = 100ms</strong>, speculative prefetching preloads shoe telemetry into local SWR memory cache.
               </p>
               <div style={{ background: 'var(--accent-green-subtle)', border: '1px solid var(--accent-green)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem', color: '#065F46', fontWeight: 800 }}>
-                ⚡ <strong style={{ color: '#059669' }}>Empirical Mean:</strong> Instant render in <strong>4.5ms to 35.2ms</strong> (Up to <strong>68.5% faster</strong>).
+                ⚡ <strong style={{ color: '#059669' }}>Behaviour:</strong> A navigation is served from the cache when the prefetch has completed before the click.
               </div>
             </div>
 
@@ -743,11 +783,11 @@ export default function BenchmarkCockpit() {
                 color: '#FFFFFF',
                 margin: '0.2rem 0'
               }}>
-                Controlled 180-Run Benchmark Suite
+                Simulated 180-Run Model
               </h2>
 
               <p style={{ fontSize: '0.92rem', color: '#9CA3AF', maxWidth: '750px', lineHeight: 1.5 }}>
-                Simulates 3 network profiles (Broadband, Fast 4G, Throttled 3G) × 2 architecture modes (Baseline vs. Optimized SWR) × 30 controlled runs = <strong>180 total experimental runs</strong> with live latency telemetry and CSV export.
+                Simulates 3 network profiles (Broadband, Fast 4G, Throttled 3G) × 2 architecture modes (Baseline vs. Optimized SWR) × 30 modelled runs = <strong>180 simulated rows</strong> with CSV export. These are model outputs, not browser measurements.
               </p>
             </div>
 
@@ -919,30 +959,30 @@ export default function BenchmarkCockpit() {
           {/* Quick Metrics HUD Badges */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <div style={{ background: 'rgba(255,255,255,0.06)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Total Benchmark Runs</span>
+              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Simulated Rows</span>
               <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#FFFFFF', marginTop: '0.2rem' }}>
                 {benchmark180Data.length} / 180
               </div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.06)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>4G Latency Reduction</span>
+              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Modelled 4G Reduction</span>
               <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-green)', marginTop: '0.2rem' }}>
-                68.54% Faster
+                {(summaryStats.find(r => r.scenario === 'Fast 4G' && r.mode === 'OPTIMIZED') || {}).reductionPct || '—'}
               </div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.06)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>3G Latency Gain</span>
+              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Modelled 3G Mean</span>
               <div style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--accent-yellow)', marginTop: '0.2rem' }}>
-                405ms → 170ms
+                {Math.round((summaryStats.find(r => r.scenario === 'Throttled 3G' && r.mode === 'BASELINE') || {}).meanLatency || 0)}ms → {Math.round((summaryStats.find(r => r.scenario === 'Throttled 3G' && r.mode === 'OPTIMIZED') || {}).meanLatency || 0)}ms
               </div>
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.06)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Statistical Significance</span>
+              <span style={{ fontSize: '0.72rem', color: '#9CA3AF', textTransform: 'uppercase' }}>Data Source</span>
               <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#FFFFFF', marginTop: '0.2rem' }}>
-                p &lt; 0.0001
+                Simulated model
               </div>
             </div>
           </div>
@@ -963,13 +1003,13 @@ export default function BenchmarkCockpit() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#059669', fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', marginBottom: '0.2rem' }}>
                 <BarChart3 size={16} />
-                <span>Empirical Statistical Synthesis</span>
+                <span>Summary of the Simulated Rows</span>
               </div>
               <h2 style={{ fontFamily: 'var(--font-sport)', fontStyle: 'italic', fontSize: '1.6rem', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'uppercase', color: '#0A0A0A' }}>
-                Objective 4 Statistical Evaluation Table
+                Simulated Model Summary Table
               </h2>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-                N = 30 runs per scenario across 3 network profiles × 2 modes = 180 total runs. Evaluated via Welch&apos;s t-test.
+                N = 30 modelled runs per scenario across 3 network profiles × 2 modes = 180 simulated rows. Welch&apos;s t-test is computed from the rows shown.
               </p>
             </div>
 
@@ -1071,7 +1111,7 @@ export default function BenchmarkCockpit() {
           </div>
 
           <div style={{ marginTop: '1.25rem', padding: '1rem', background: '#F9FAFB', borderRadius: '8px', border: '1px solid #E5E7EB', fontSize: '0.85rem', color: '#4B5563', lineHeight: 1.5 }}>
-            💡 <strong style={{ color: '#0A0A0A' }}>Interpretation:</strong> In all three network profiles, predictive prefetching yields a statistically significant latency reduction (p &lt; 0.0001). The relative performance gain peaks on mobile 4G networks at <strong>68.54%</strong> due to masking high initial RTT, while speculative network request overhead remained bounded at +20–33%.
+            💡 <strong style={{ color: '#0A0A0A' }}>Interpretation:</strong> These statistics are computed from simulated rows, so they describe the assumptions of the model and do not establish the performance of the prototype. The measured, paired results from the running application are in <code>analysis/measured_results_summary.md</code>.
           </div>
         </div>
 

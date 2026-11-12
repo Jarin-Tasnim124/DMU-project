@@ -11,13 +11,21 @@
     "dev:frontend": "cd frontend && npm run dev",
     "dev": "concurrently -n \"API,WEB\" -c \"cyan,magenta\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build": "cd frontend && npm run build",
+    "test": "cd frontend && npm test",
+    "benchmark:browser": "node benchmark/run_browser_benchmark.js",
+    "checks:browser": "node benchmark/run_browser_checks.js",
+    "analyze:browser": "node scripts/run-python.js analysis/analyze_measured.py",
+    "benchmark:simulated": "node benchmark/run_synthetic_benchmark.js",
+    "analyze:simulated": "node scripts/run-python.js analysis/analyze_results.py",
     "benchmark": "node benchmark/run_synthetic_benchmark.js",
-    "analyze": "python3 analysis/analyze_results.py",
-    "test-all": "npm run benchmark && npm run analyze"
+    "analyze": "node scripts/run-python.js analysis/analyze_results.py"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "playwright-core": "^1.48.0"
   },
   "author": "Jarin Tasnim",
-  "contributors": ["Fati Tahiru"]
+  "contributors": [
+    "Fati Tahiru"
+  ]
 }

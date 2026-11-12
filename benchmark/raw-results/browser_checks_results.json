@@ -1,0 +1,55 @@
+{
+  "run_at": "2026-11-12T11:26:33.404Z",
+  "browser": "msedge 157.0.4341.46",
+  "results": [
+    {
+      "id": "T19",
+      "name": "Mode switch in the MetricsHUD",
+      "pass": true,
+      "details": [
+        {
+          "mode": "BASELINE",
+          "stored": "BASELINE",
+          "prefetchesStarted": 0,
+          "pass": true
+        },
+        {
+          "mode": "OPTIMIZED",
+          "stored": "OPTIMIZED",
+          "prefetchesStarted": 1,
+          "pass": true
+        }
+      ]
+    },
+    {
+      "id": "T20",
+      "name": "Keyboard focus and touch",
+      "pass": true,
+      "details": {
+        "keyboard": {
+          "prefetchesStarted": 1,
+          "cacheHit": true,
+          "productRequests": 1,
+          "pass": true
+        },
+        "touch": {
+          "prefetchesStarted": 0,
+          "cacheHit": false,
+          "productRequests": 1,
+          "pass": true
+        }
+      }
+    },
+    {
+      "id": "T21",
+      "name": "Functional correctness on 30 products",
+      "pass": true,
+      "details": {
+        "products": 30,
+        "optimisedPass": 30,
+        "baselinePass": 30,
+        "failures": []
+      }
+    }
+  ]
+}

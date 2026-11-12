@@ -1,9 +1,10 @@
 /**
- * Automated Controlled Benchmark Runner
- * Conforming to Thesis Objective 4:
- * 3 Network Profiles (Standard Broadband, Fast 4G, Throttled 3G)
- * x 2 Implementations (Baseline vs Optimized)
- * x 30 Controlled Runs per Scenario = 180 Total Experimental Runs
+ * SIMULATED benchmark (exploratory model)
+ *
+ * Generates 180 modelled rows (3 network profiles x 2 modes x 30 runs) from
+ * assumed probabilities and timing distributions. It does NOT measure the
+ * running application. The measured evaluation for Objective 4 is
+ * benchmark/run_browser_benchmark.js (npm run benchmark:browser).
  */
 
 const fs = require('fs');

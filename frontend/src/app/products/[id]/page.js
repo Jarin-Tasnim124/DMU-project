@@ -43,16 +43,17 @@ export default function ProductDetailPage() {
         const record = globalTracker.endNavigation(`/products/${id}`, {
           cacheHit: res.fromCache,
           prefetched: res.prefetched,
+          servedByInFlight: res.servedByInFlight,
           ttfb: res.ttfb,
-          latencyMs: elapsed,
-          payloadBytes: 3200
+          payloadBytes: res.bytes
         });
 
         setNavTelemetry({
           latencyMs: record ? record.latencyMs : parseFloat(elapsed.toFixed(2)),
-          fromCache: res.data?.fromCache || res.fromCache,
-          prefetched: res.data?.prefetched || res.prefetched,
-          ttfb: res.data?.ttfb || res.ttfb
+          fromCache: res.fromCache,
+          prefetched: res.prefetched,
+          servedByInFlight: res.servedByInFlight,
+          ttfb: res.ttfb
         });
       } catch (err) {
         console.error('Failed to load sneaker detail:', err);
@@ -155,7 +156,7 @@ export default function ProductDetailPage() {
               <span>
                 Resolved in <strong style={{ color: '#0A0A0A' }}>{navTelemetry.latencyMs}ms</strong> via{' '}
                 <strong>
-                  {navTelemetry.fromCache ? (navTelemetry.prefetched ? 'Prefetched SWR Cache' : 'In-Memory Cache') : 'Direct Network API Fetch'}
+                  {navTelemetry.fromCache ? (navTelemetry.prefetched ? 'Prefetched SWR Cache' : 'In-Memory Cache') : navTelemetry.servedByInFlight ? 'In-Flight Prefetch' : 'Direct Network API Fetch'}
                 </strong>
               </span>
             </div>

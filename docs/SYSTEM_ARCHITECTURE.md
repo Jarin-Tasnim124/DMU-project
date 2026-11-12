@@ -61,16 +61,26 @@ The system is constructed as a decoupled full-stack web research platform design
   1. User hovers pointer over card or anchor element: `onPointerEnter` initiates high-precision timer `setTimeout(callback, 100)`.
   2. If the user moves pointer away before $100\text{ ms}$: `onPointerLeave` executes `clearTimeout()`. This completely cancels speculative prefetch, eliminating unnecessary network bandwidth on rapid cursor swipes.
   3. If dwell time $t \ge 100\text{ ms}$: The intent callback fires, requesting the target resource and injecting it into SWR cache.
-  4. Concurrent deduplication ensures duplicate requests for in-flight resources are blocked.
+  4. Keys that are already cached or already being fetched are skipped.
+  5. A prefetch that has already been sent is not cancelled when the pointer leaves; its result stays in the cache and is counted as wasted if it is never used.
+* **Keyboard and touch:** Keyboard focus on a card uses the same delayed prefetch. Touch has no hover, so a tap falls back to on-demand fetching.
+
+### 2.1.1 In-Flight Request De-duplication (`frontend/src/lib/api/client.js`)
+* An in-flight map stores one Promise per cache key. A click that arrives while a prefetch for the same product is still loading reuses that Promise, so no second request is sent.
+* Failed requests are never cached; the next attempt uses the network.
+* The latency condition is applied by the server: the client sends the delay of the selected profile (15, 85 or 380 ms) in the `X-Simulated-Delay` header.
 
 ### 2.2 Stale-While-Revalidate (SWR) In-Memory Cache (`frontend/src/lib/cache/swrCache.js`)
-* Implements the HTTP RFC 5861 `stale-while-revalidate` logic in client JavaScript memory:
-  * **Fresh State:** Age $\le \text{TTL}$ (default 120 seconds). Instant synchronous return ($\text{latency} < 5\text{ ms}$).
+* Implements the stale-while-revalidate pattern in client JavaScript memory (an application-level cache, not the browser HTTP cache):
+  * **Fresh State:** Age $\le \text{TTL}$ (default 120 seconds). Returned synchronously without a request.
   * **Stale State:** $\text{TTL} < \text{Age} \le (\text{TTL} + \text{Grace Period})$. Returns cached data immediately to keep UI responsive, while initiating an asynchronous background HTTP fetch to update cache.
   * **Consumption & Waste Tracking:**
     * When an item is prefetched, it is marked `prefetched = true`, `consumed = false`.
-    * When the user clicks the route, `markConsumed()` sets `consumed = true`.
-    * If the entry expires or session completes without consumption, it is registered as `wasted`.
+    * The first navigation that reads the entry sets `consumed = true`.
+    * If the entry expires or is evicted without being used, it is counted as `wasted`.
+  * **Expired State:** Age $> (\text{TTL} + \text{Grace Period})$ (grace 60 seconds). The entry is removed and treated as a miss.
+  * **Capacity limit:** At most 100 entries. When the cache is full, the least recently used entry is evicted.
+  * **Failed revalidation:** The stale entry is kept until it expires.
 
 ---
 
@@ -80,7 +90,7 @@ The backend server is implemented using Node.js and Express.js running on port `
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
-| `/api/products` | `GET` | Paginated product listing. Supports `page`, `limit`, `category`, `search`, `sortBy`, `delay`. |
+| `/api/products` | `GET` | Paginated product listing. Supports `page`, `limit`, `category`, `search`, `sortBy`. The `X-Simulated-Delay` header adds a fixed delay of 15, 85 or 380 ms. |
 | `/api/products/:id` | `GET` | Individual product specification by ID, with 4 clustered related products. |
 | `/api/categories` | `GET` | List of all available product categories and inventory counts. |
 | `/api/telemetry` | `POST` | Ingests client-side experimental navigation timing records. |

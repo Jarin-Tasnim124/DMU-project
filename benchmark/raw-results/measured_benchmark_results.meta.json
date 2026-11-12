@@ -1,0 +1,52 @@
+{
+  "started_at": "2026-11-12T11:43:22.834Z",
+  "finished_at": "2026-11-12T11:53:11.120Z",
+  "browser": {
+    "channel": "msedge",
+    "version": "157.0.4341.46",
+    "headless": true,
+    "viewport": "1366x900"
+  },
+  "machine": {
+    "os": "Windows_NT 10.0.26200 (x64)",
+    "cpu": "AMD Ryzen 5 5600H with Radeon Graphics         ",
+    "logical_cpus": 12,
+    "memory_gb": 7
+  },
+  "node_version": "v24.20.0",
+  "frontend": "next build + next start (production)",
+  "dwell_threshold_ms": 100,
+  "trials_per_cell": 30,
+  "warmup_trials_per_condition": 3,
+  "added_delays_ms": {
+    "Broadband": 15,
+    "Fast 4G": 85,
+    "Throttled 3G": 380
+  },
+  "interaction_sequence": [
+    {
+      "name": "hover_150_click",
+      "description": "Rest on the target card for 150 ms, then click"
+    },
+    {
+      "name": "hover_300_click",
+      "description": "Rest on the target card for 300 ms, then click"
+    },
+    {
+      "name": "hover_600_click",
+      "description": "Rest on the target card for 600 ms, then click"
+    },
+    {
+      "name": "abandoned_hover_then_click",
+      "description": "Rest on a different card for 250 ms, move to the target card and click after 40 ms"
+    },
+    {
+      "name": "click_without_dwell",
+      "description": "Move to the target card and click after 40 ms"
+    }
+  ],
+  "trial_order": "For each latency condition: warm-up, then trials 1..N; within trial i both modes run back to back, Baseline first when i is odd",
+  "cache_reset": "New page load and empty application cache before every trial",
+  "repeated_attempts_after_technical_failure": 0,
+  "total_rows": 180
+}
