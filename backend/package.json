@@ -1,0 +1,16 @@
+{
+  "name": "predictive-prefetch-backend",
+  "version": "1.0.0",
+  "description": "Express REST API for Empirical Framework for Algorithmic Optimization and Predictive Data-Fetching",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js",
+    "seed": "node src/data/generate_dataset.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

@@ -1,0 +1,845 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ==============================================================================
+     60% WHITE / 30% BLACK / 5% GREEN / 5% YELLOW DESIGN SYSTEM
+     ============================================================================== */
+  /* 60% White: Clean, spacious, modern gallery canvas */
+  --bg-canvas: #F8F9FA;
+  --bg-surface: #FFFFFF;
+  --bg-surface-elevated: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #FFFFFF;
+
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.16);
+  --border-dark: #000000;
+
+  /* 30% Black: High contrast, deep structure, typography, dark sections */
+  --text-main: #0A0A0A;
+  --text-secondary: #4B5563;
+  --text-muted: #9CA3AF;
+  --color-black: #000000;
+  --color-dark: #111827;
+
+  /* 5% Green: Emerald / Volt Green (Authenticity, Stock, Speed, Success) */
+  --accent-green: #10B981;
+  --accent-green-dark: #059669;
+  --accent-green-subtle: rgba(16, 185, 129, 0.12);
+
+  /* 5% Yellow: Sneaker Gold / Volt Yellow (Ratings, Discounts, Timer, Accents) */
+  --accent-yellow: #F59E0B;
+  --accent-yellow-vibrant: #FFE500;
+  --accent-yellow-subtle: rgba(245, 158, 11, 0.14);
+
+  /* Backward Compatibility Aliases */
+  --accent-orange: #F59E0B;
+  --accent-cyan: #10B981;
+  --accent-emerald: #10B981;
+  --accent-gold: #F59E0B;
+
+  /* High-Performance Sportswear Typography System (Helvetica Neue Bold/Black Italic) */
+  --font-sport: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica", Arial, sans-serif;
+  --font-heading: "Helvetica Neue", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica", Arial, sans-serif;
+  --font-body: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-card-hover: 0 20px 35px -5px rgba(0, 0, 0, 0.12), 0 8px 16px -2px rgba(0, 0, 0, 0.06);
+
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  background-color: var(--bg-canvas);
+  color: var(--text-main);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ==============================================================================
+   HIGH-PERFORMANCE SPORTSWEAR HEADINGS & BRANDING (HELVETICA NEUE BOLD/BLACK ITALIC)
+   ============================================================================== */
+h1, h2, h3, h4,
+.sport-heading,
+.store-brand,
+.hero-heading,
+.flash-title,
+.category-hero-title,
+.catalog-title {
+  font-family: var(--font-sport);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ==============================================================================
+   ANIMATION 1: 3D HERO SNEAKER FLOAT & PARALLAX
+   ============================================================================== */
+@keyframes shoeFloat {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(-2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes shadowPulse {
+  0% { transform: scale(1); opacity: 0.25; }
+  50% { transform: scale(0.85); opacity: 0.12; }
+  100% { transform: scale(1); opacity: 0.25; }
+}
+
+.hero-3d-shoe {
+  animation: shoeFloat 5s ease-in-out infinite;
+  filter: drop-shadow(0 20px 30px rgba(0,0,0,0.18));
+  transition: transform 150ms ease-out;
+  cursor: grab;
+}
+
+.hero-shadow-disc {
+  width: 75%;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, transparent 70%);
+  margin: 0 auto;
+  border-radius: 50%;
+  animation: shadowPulse 5s ease-in-out infinite;
+}
+
+/* ==============================================================================
+   CLEAN PRODUCT CARD (60% WHITE / 30% BLACK / 5% GREEN / 5% YELLOW)
+   ============================================================================== */
+.sneaker-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: var(--shadow-card);
+  transition: transform var(--transition-smooth), box-shadow var(--transition-smooth), border-color var(--transition-smooth);
+}
+
+.sneaker-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ==============================================================================
+   ANIMATION 3: SCROLL MOTION & REVEAL
+   ============================================================================== */
+@keyframes revealFadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.scroll-reveal {
+  animation: revealFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==============================================================================
+   HEADER & NAVIGATION (30% BLACK ACCENT BAR WITH CRISP WHITE BODY)
+   ============================================================================== */
+.store-header {
+  background: #000000;
+  color: #FFFFFF;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0.95rem 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.store-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.store-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sport);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  color: #FFFFFF;
+}
+
+.brand-badge {
+  background: var(--accent-yellow);
+  color: #000000;
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-size: 0.68rem;
+  font-weight: 900;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.05em;
+}
+
+.header-search {
+  flex: 1;
+  max-width: 580px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #1A1A1A;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  transition: border-color var(--transition-fast);
+}
+
+.header-search:focus-within {
+  border-color: #FFFFFF;
+}
+
+.search-category-select {
+  background: transparent;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  color: #D1D5DB;
+  font-size: 0.78rem;
+  padding: 0.65rem 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.search-category-select option {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+.search-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 0.65rem 1rem;
+  color: #FFFFFF;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.search-input-field::placeholder {
+  color: #9CA3AF;
+}
+
+.search-btn {
+  background: #FFFFFF;
+  color: #000000;
+  padding: 0.65rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast);
+}
+
+.search-btn:hover {
+  background: var(--accent-yellow);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 1.1rem;
+  background: #1A1A1A;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-full);
+  color: #FFFFFF;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.header-action-btn:hover {
+  background: #FFFFFF;
+  color: #000000;
+}
+
+.cart-count-badge {
+  background: var(--accent-yellow);
+  color: #000000;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+}
+
+/* ==============================================================================
+   CATEGORY HORIZONTAL SUBNAV BAR (LIGHT/CLEAN WHITE WITH BLACK TEXT)
+   ============================================================================== */
+.category-subnav {
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.75rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.category-subnav-list {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-bottom: 2px;
+}
+
+.category-subnav-item {
+  cursor: pointer;
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+  background: transparent;
+}
+
+.category-subnav-item:hover {
+  color: #000000;
+  background: #F3F4F6;
+}
+
+.category-subnav-item.highlight {
+  color: #FFFFFF;
+  background: #000000;
+  font-weight: 800;
+}
+
+/* ==============================================================================
+   HERO BANNER (SPACIOUS LIGHT/WHITE GALLERY WITH 30% BLACK CONTRAST)
+   ============================================================================== */
+.hero-banner {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 3.5rem;
+  margin: 2rem 0 3rem;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 3rem;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+.hero-banner::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -15%;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--accent-yellow-subtle);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #B45309;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.3rem 0.8rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 1.25rem;
+}
+
+.hero-heading {
+  font-family: var(--font-sport);
+  font-size: 3.4rem;
+  font-weight: 900;
+  font-style: italic;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  margin-bottom: 1.25rem;
+  color: #0A0A0A;
+  text-transform: uppercase;
+}
+
+.hero-description {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.6;
+  max-width: 520px;
+  margin-bottom: 2rem;
+}
+
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ==============================================================================
+   BUTTONS (30% BLACK WITH 60% WHITE & 5% YELLOW/GREEN ACCENTS)
+   ============================================================================== */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #000000;
+  color: #FFFFFF;
+  font-family: var(--font-sport);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 0.88rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.btn-primary:hover {
+  background: #1F2937;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: #FFFFFF;
+  color: #000000;
+  border: 1.5px solid #000000;
+  font-family: var(--font-sport);
+  font-weight: 900;
+  font-style: italic;
+  font-size: 0.88rem;
+  padding: 0.85rem 1.6rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.btn-secondary:hover {
+  background: #000000;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+}
+
+/* ==============================================================================
+   PRODUCT CARD LAYOUT (60% WHITE / 30% BLACK / 5% GREEN / 5% YELLOW)
+   ============================================================================== */
+.card-img-box {
+  position: relative;
+  width: 100%;
+  height: 250px;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.card-img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sneaker-card:hover .card-img {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.card-discount-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--accent-yellow);
+  color: #000000;
+  font-weight: 900;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  z-index: 5;
+}
+
+.card-info {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.card-brand {
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.25rem;
+}
+
+.card-title {
+  font-family: var(--font-body);
+  font-size: 0.96rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #0A0A0A;
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7rem;
+}
+
+.card-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  margin-top: auto;
+}
+
+.current-price {
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0A0A0A;
+}
+
+.original-price {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.card-actions-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-add-cart {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  background: #000000;
+  color: #FFFFFF;
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.7rem 0.5rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.btn-add-cart:hover {
+  background: #1F2937;
+  transform: translateY(-1px);
+}
+
+.btn-view-spec {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.85rem;
+  background: #F3F4F6;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: #000000;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-view-spec:hover {
+  background: #000000;
+  color: #FFFFFF;
+}
+
+/* ==============================================================================
+   CATEGORY CIRCLES (SHOP BY SILHOUETTE)
+   ============================================================================== */
+.category-avatars-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.category-avatar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.category-avatar-card:hover {
+  transform: translateY(-4px);
+}
+
+.avatar-circle {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 2px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.category-avatar-card:hover .avatar-circle {
+  border-color: #000000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.avatar-img {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.category-avatar-card:hover .avatar-img {
+  transform: scale(1.15) rotate(-3deg);
+}
+
+.avatar-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0A0A0A;
+}
+
+/* ==============================================================================
+   FLASH DROPS COUNTDOWN COMPONENT
+   ============================================================================== */
+.flash-drops-section {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem;
+  margin-bottom: 3.5rem;
+  box-shadow: var(--shadow-card);
+}
+
+.flash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.flash-title {
+  font-family: var(--font-sport);
+  font-size: 1.65rem;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.04em;
+  color: #0A0A0A;
+  text-transform: uppercase;
+}
+
+.countdown-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #000000;
+  color: #FFFFFF;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.countdown-digit {
+  font-size: 1.15rem;
+  font-family: var(--font-sport);
+  font-style: italic;
+  font-weight: 900;
+  color: var(--accent-yellow);
+}
+
+/* ==============================================================================
+   MAIN CATALOG LAYOUT (SIDEBAR + PRODUCTS)
+   ============================================================================== */
+.catalog-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 2.5rem;
+  align-items: start;
+}
+
+.catalog-sidebar {
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  position: sticky;
+  top: 90px;
+  box-shadow: var(--shadow-card);
+}
+
+.product-grid-wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ==============================================================================
+   CART SLIDE-OVER DRAWER
+   ============================================================================== */
+.cart-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cart-drawer-content {
+  width: 100%;
+  max-width: 440px;
+  height: 100vh;
+  background: #FFFFFF;
+  color: #000000;
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  padding: 1.75rem;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.25);
+  animation: slideDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDrawer {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* ==============================================================================
+   FOOTER (30% BLACK LUXURY FINISH)
+   ============================================================================== */
+.store-footer {
+  background: #000000;
+  color: #FFFFFF;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4.5rem 0 2.5rem;
+  margin-top: 6rem;
+  font-size: 0.85rem;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2.5rem;
+  margin-bottom: 3.5rem;
+}
+
+.footer-col-title {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 1.25rem;
+  color: #FFFFFF;
+  text-transform: uppercase;
+}
+
+.footer-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: #9CA3AF;
+}
+
+.footer-links a:hover {
+  color: #FFFFFF;
+}
+
+@media (max-width: 1024px) {
+  .catalog-layout {
+    grid-template-columns: 1fr;
+  }
+  .catalog-sidebar {
+    position: static;
+  }
+  .hero-banner {
+    grid-template-columns: 1fr;
+    padding: 2.5rem;
+  }
+}
