@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import globalTracker from '../../lib/metrics/performanceTracker';
+import { API_BASE } from '../../lib/api/apiBase';
 import { 
   ArrowLeft, Download, RefreshCw, Play, Square, Zap, Layers, 
   Wifi, Clock, Award, Sparkles, MousePointer, CheckCircle, Check, 
@@ -189,7 +190,6 @@ export default function BenchmarkCockpit() {
     setMetrics(globalTracker.getSummary());
 
     // Fetch live results from backend or fallback to deterministic generator
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
     fetch(`${API_BASE}/benchmark/results`)
       .then(res => res.json())
       .then(data => {
@@ -335,7 +335,6 @@ export default function BenchmarkCockpit() {
 
   // Sync to Backend to update benchmark_results.csv on server
   const syncBenchmarkToBackend = async (records = benchmark180Data) => {
-    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
     try {
       setBackendSyncStatus('syncing');
       const res = await fetch(`${API_BASE}/benchmark/results`, {

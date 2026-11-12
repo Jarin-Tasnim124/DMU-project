@@ -4,7 +4,7 @@
 import globalSWRCache from '../cache/swrCache';
 import globalTracker from '../metrics/performanceTracker';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+import { API_BASE } from './apiBase';
 
 // Network profile latency simulation delays (ms)
 const NETWORK_SIMULATION_DELAYS = {

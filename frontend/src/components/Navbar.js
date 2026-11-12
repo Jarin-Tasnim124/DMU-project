@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, ShoppingBag, X, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { formatPriceDKK } from '../lib/formatCurrency';
+import { API_BASE } from '../lib/api/apiBase';
 
 const CATEGORY_ITEMS = [
   { label: '🔥 All Sneakers', value: 'All' },
@@ -71,7 +72,7 @@ export default function Navbar({
         if (selectedCategory && selectedCategory !== 'All') {
           queryParams.append('category', selectedCategory);
         }
-        const res = await fetch(`http://localhost:5001/api/products?${queryParams.toString()}`);
+        const res = await fetch(`${API_BASE}/products?${queryParams.toString()}`);
         if (res.ok) {
           const json = await res.json();
           setSuggestions(json.data || []);

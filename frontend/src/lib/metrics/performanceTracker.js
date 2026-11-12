@@ -3,12 +3,13 @@
 
 import globalSWRCache from '../cache/swrCache';
 import globalPrefetcher from '../prefetch/hoverIntent';
+import { API_BASE } from '../api/apiBase';
 
 class PerformanceTracker {
   constructor() {
     this.mode = 'OPTIMIZED'; // 'BASELINE' or 'OPTIMIZED'
     this.networkProfile = 'Broadband'; // 'Broadband' | 'Fast 4G' | 'Throttled 3G'
-    this.apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+    this.apiBaseUrl = API_BASE;
 
     this.navHistory = [];
     this.totalHttpRequests = 0;
