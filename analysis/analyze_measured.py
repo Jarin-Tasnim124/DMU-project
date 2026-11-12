@@ -248,11 +248,17 @@ def main():
     base_rows = [r for r in rows if r["mode"] == "BASELINE"]
     one_request = sum(1 for r in base_rows if r["product_requests"] == 1)
     inflight_rows = [r for r in rows if r["mode"] == "OPTIMIZED" and r["served_by_inflight_prefetch"] == 1]
-    inflight_single = sum(1 for r in inflight_rows if r["product_requests"] == 1)
+    # A navigation that reuses an in-flight prefetch adds no request of its own, so the
+    # trial's requests must equal the prefetches started (one request per prefetch).
+    inflight_single = sum(1 for r in inflight_rows if r["product_requests"] == r["prefetch_initiated"])
+    late_prefetch = [r for r in inflight_rows if r["interaction"] in ("abandoned_hover_then_click", "click_without_dwell")]
     out.append("## Checks taken from the benchmark")
     out.append("")
     out.append(f"- Baseline trials with exactly one product request: {one_request} of {len(base_rows)}")
-    out.append(f"- Navigations served by an in-flight prefetch that sent no second request: {inflight_single} of {len(inflight_rows)}")
+    out.append(f"- Navigations served by an in-flight prefetch that added no request of their own "
+               f"(requests in the trial = prefetches started): {inflight_single} of {len(inflight_rows)}")
+    out.append(f"- Trials in which the dwell timer expired after the click, so the request was issued by the "
+               f"prefetcher and reused by the navigation (interactions with a 40 ms dwell): {len(late_prefetch)}")
     out.append("")
 
     text = "\n".join(out)

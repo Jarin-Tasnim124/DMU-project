@@ -56,4 +56,5 @@ Requests are GET requests to `/api/products/:id` seen in the browser network log
 ## Checks taken from the benchmark
 
 - Baseline trials with exactly one product request: 90 of 90
-- Navigations served by an in-flight prefetch that sent no second request: 16 of 17
+- Navigations served by an in-flight prefetch that added no request of their own (requests in the trial = prefetches started): 17 of 17
+- Trials in which the dwell timer expired after the click, so the request was issued by the prefetcher and reused by the navigation (interactions with a 40 ms dwell): 2
